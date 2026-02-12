@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For Châu Anh</title>
+
+<style>
+body{
+  margin:0;
+  overflow:hidden;
+  background:black;
+  font-family:"Times New Roman",serif;
+  color:white;
+}
+
+/* CANVAS */
+canvas{
+  position:absolute;
+  top:0;
+  left:0;
+}
+
+/* CENTER TEXT */
+.centerText{
+  position:absolute;
+  width:100%;
+  top:42%;
+  text-align:center;
+  font-size:48px;
+  font-style:italic;
+  letter-spacing:3px;
+  opacity:0;
+  transition:1s;
+  pointer-events:none;
+}
+.glow{
+  text-shadow:0 0 20px #ff4d6d,0 0 50px #ff4d6d,0 0 100px #ff4d6d;
+}
+
+/* BUTTON */
+button{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  padding:16px 50px;
+  background:transparent;
+  border:1px solid white;
+  color:white;
+  cursor:pointer;
+  letter-spacing:3px;
+  transition:0.4s;
+}
+button:hover{
+  background:white;
+  color:black;
+}
+
+#startBtn{
+  top:50%;
+  transform:translate(-50%,-50%);
+  font-size:20px;
+  border-radius:40px;
+}
+
+#letterBtn{
+  bottom:120px;
+  display:none;
+}
+
+/* ENVELOPE */
+#envelope{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(0);
+  width:280px;
+  height:190px;
+  background:#111;
+  border:1px solid rgba(255,255,255,0.3);
+  display:none;
+  cursor:pointer;
+  transition:0.8s;
+  box-shadow:0 0 50px rgba(255,100,150,0.4);
+  perspective:1000px;
+}
+
+#flap{
+  position:absolute;
+  width:100%;
+  height:100%;
+  background:#111;
+  clip-path:polygon(0 0,100% 0,50% 60%);
+  transform-origin:top;
+  transition:0.8s ease;
+}
+
+#heartSeal{
+  position:absolute;
+  top:-30px;
+  left:50%;
+  transform:translateX(-50%) scale(0);
+  font-size:42px;
+  color:#ff4d6d;
+  text-shadow:0 0 15px #ff4d6d,0 0 35px #ff4d6d;
+  transition:0.8s;
+  z-index:10;
+}
+
+#letterPaper{
+  position:absolute;
+  width:90%;
+  height:150px;
+  background:#111;
+  top:20px;
+  left:5%;
+  transform:translateY(60px);
+  transition:1s ease;
+  box-shadow:0 0 40px rgba(255,100,150,0.5);
+}
+
+/* LETTER BOX */
+#letterBox{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) translateY(40px);
+  width:75%;
+  max-width:800px;
+  background:rgba(0,0,0,0.96);
+  padding:45px;
+  line-height:1.9;
+  font-size:19px;
+  opacity:0;
+  display:none;
+  transition:1s;
+  box-shadow:0 0 60px rgba(255,100,150,0.6);
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="canvas"></canvas>
+<div class="centerText" id="text"></div>
+
+<button id="startBtn">💖 START 💖</button>
+<button id="letterBtn">💌 ẤN VÀO ĐÂY !!!💌</button>
+
+<div id="envelope">
+  <div id="flap"></div>
+  <div id="heartSeal">❤️</div>
+  <div id="letterPaper"></div>
+</div>
+
+<div id="letterBox">
+  <div id="letterContent"></div>
+</div>
+
+<script>
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+window.addEventListener("resize",()=>{
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+});
+
+const PARTICLES=5000;
+const STARS=300;
+const METEORS=6;
+
+let particles=[],stars=[],meteors=[];
+
+/* STAR */
+class Star{
+  constructor(){
+    this.x=Math.random()*canvas.width;
+    this.y=Math.random()*canvas.height;
+    this.size=Math.random()*2;
+    this.alpha=Math.random();
+  }
+  draw(){
+    ctx.fillStyle="rgba(255,255,255,"+this.alpha+")";
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
+    ctx.fill();
+  }
+}
+
+/* METEOR */
+class Meteor{
+  constructor(){this.reset();}
+  reset(){
+    this.x=Math.random()*canvas.width;
+    this.y=-50;
+    this.length=Math.random()*150+80;
+    this.speed=Math.random()*4+3;
+    this.angle=Math.PI/4+(Math.random()*0.2-0.1);
+    this.opacity=1;
+    this.fade=Math.random()*0.005+0.002;
+  }
+  update(){
+    this.x+=Math.cos(this.angle)*this.speed;
+    this.y+=Math.sin(this.angle)*this.speed;
+    this.opacity-=this.fade;
+    if(this.opacity<=0||this.y>canvas.height) this.reset();
+  }
+  draw(){
+    const tailX=this.x-Math.cos(this.angle)*this.length;
+    const tailY=this.y-Math.sin(this.angle)*this.length;
+    const gradient=ctx.createLinearGradient(this.x,this.y,tailX,tailY);
+    gradient.addColorStop(0,"rgba(255,255,255,"+this.opacity+")");
+    gradient.addColorStop(1,"rgba(255,255,255,0)");
+    ctx.strokeStyle=gradient;
+    ctx.beginPath();
+    ctx.moveTo(this.x,this.y);
+    ctx.lineTo(tailX,tailY);
+    ctx.stroke();
+  }
+}
+
+/* PARTICLE */
+class Particle{
+  constructor(){
+    this.x=Math.random()*canvas.width;
+    this.y=Math.random()*canvas.height;
+    this.tx=this.x;
+    this.ty=this.y;
+    this.size=Math.random()*1.3+0.3;
+    this.speed=Math.random()*0.05+0.02;
+  }
+  update(){
+    this.x+=(this.tx-this.x)*this.speed;
+    this.y+=(this.ty-this.y)*this.speed;
+  }
+  draw(){
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.size,0,Math.PI*2);
+    ctx.fillStyle="rgba(255,105,180,0.9)";
+    ctx.fill();
+  }
+}
+
+/* HEART SHAPE */
+function heart(t){
+  let x=16*Math.pow(Math.sin(t),3);
+  let y=-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
+  return {x,y};
+}
+
+function createHeart(scale=18){
+  let points=[];
+  for(let t=0;t<Math.PI*2;t+=0.003){
+    let p=heart(t);
+    for(let i=0;i<3;i++){
+      points.push({
+        x:canvas.width/2+p.x*(scale+Math.random()*2),
+        y:canvas.height/2+p.y*(scale+Math.random()*2)
+      });
+    }
+  }
+  particles.forEach(p=>{
+    let target=points[Math.floor(Math.random()*points.length)];
+    p.tx=target.x;
+    p.ty=target.y;
+  });
+}
+
+function explode(){
+  particles.forEach(p=>{
+    p.tx=Math.random()*canvas.width;
+    p.ty=Math.random()*canvas.height;
+  });
+}
+
+/* TYPEWRITER */
+function typeWriter(text,callback){
+  const el=document.getElementById("text");
+  el.innerHTML="";
+  el.style.opacity=1;
+  let i=0;
+  function typing(){
+    if(i<text.length){
+      el.innerHTML+=text.charAt(i);
+      i++;
+      setTimeout(typing,60);
+    }else if(callback){
+      setTimeout(callback,1500);
+    }
+  }
+  typing();
+}
+
+/* START SEQUENCE */
+document.getElementById("startBtn").onclick=function(){
+  const btn=this;
+  btn.style.transform="translate(-50%,-50%) scale(6)";
+  btn.style.opacity="0";
+  setTimeout(()=>{
+    btn.style.display="none";
+    startSequence();
+  },1000);
+};
+
+function startSequence(){
+  typeWriter("🌌 Hôm nay là 14/2 ngày Valentine...",()=>{
+    typeWriter("💫 Có một điều tớ luôn muốn nói...",()=>{
+      createHeart();
+      setTimeout(()=>{
+        document.getElementById("text").classList.add("glow");
+        typeWriter("💖 Châu Anh 💖",()=>{
+          setTimeout(()=>{
+            explode();
+            document.getElementById("text").classList.remove("glow");
+            typeWriter("Chúc cậu có một ngày thật đặc biệt nhé !!! ❤️",()=>{
+              document.getElementById("letterBtn").style.display="block";
+            });
+          },3500);
+        });
+      },3500);
+    });
+  });
+}
+
+/* OPEN ENVELOPE */
+document.getElementById("letterBtn").onclick=function(){
+  const env=document.getElementById("envelope");
+  env.style.display="block";
+  setTimeout(()=>{
+    env.style.transform="translate(-50%,-50%) scale(1)";
+    document.getElementById("heartSeal").style.transform="translateX(-50%) scale(1)";
+  },50);
+};
+
+document.getElementById("envelope").onclick=function(){
+  const flap=document.getElementById("flap");
+  const seal=document.getElementById("heartSeal");
+  const paper=document.getElementById("letterPaper");
+
+  seal.style.transform="translateX(-50%) scale(0)";
+  flap.style.transform="rotateX(-160deg)";
+
+  setTimeout(()=>{
+    paper.style.transform="translateY(-130px)";
+    createHeart(20);
+  },500);
+
+  setTimeout(()=>{
+    const box=document.getElementById("letterBox");
+    box.style.display="block";
+    box.style.opacity=1;
+    box.style.transform="translate(-50%,-50%) translateY(0)";
+  },1200);
+};
+
+/* LETTER CONTENT */
+document.getElementById("letterContent").innerHTML = `
+Gửi Châu Anh 🎈 <br>
+Chào cậu, tự nhiên mình muốn viết cho cậu vài dòng "vô tri" nhưng chân thành này. 📝✨ <br>
+Dạo này cứ mỗi lần thấy cái gì hay hay hay nhìn mấy món đồ xinh xẻo, người đầu tiên mình nghĩ đến là cậu. 💭 Chẳng biết từ bao giờ, sự hiện diện của cậu đã trở thành một thói quen cực kỳ dễ chịu với mình rồi. 🌿 <br>
+Cảm ơn cậu vì đã luôn là chính cậu — một cô gái đầy năng lượng và có nụ cười siêu "tỏa nắng". ☀️ Chẳng cần phải quá cầu kỳ, chỉ cần ngồi cafe nói chuyện cùng cậu thôi là mình thấy đủ vui cho cả ngày dài rồi. ☕️🍰 <br>
+Mong là thế giới ngoài kia không làm khó cậu quá, vì cậu xứng đáng với những điều ngọt ngào nhất. 🍬🌈 <br>
+Hẹn gặp cậu sớm nhé! 🙋‍♂️✨
+`;
+/* LOOP */
+function animate(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  stars.forEach(s=>s.draw());
+  meteors.forEach(m=>{m.update();m.draw();});
+  particles.forEach(p=>{p.update();p.draw();});
+  requestAnimationFrame(animate);
+}
+
+function init(){
+  for(let i=0;i<PARTICLES;i++) particles.push(new Particle());
+  for(let i=0;i<STARS;i++) stars.push(new Star());
+  for(let i=0;i<METEORS;i++) meteors.push(new Meteor());
+}
+
+init();
+animate();
+</script>
+</body>
+</html>
